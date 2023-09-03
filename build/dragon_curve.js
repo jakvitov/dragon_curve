@@ -36,7 +36,8 @@ var splitLine = function (a, b, iterNum, iterMax) {
 };
 var start = function (start, end) {
     //We can parse this, since the input is of type number. Worst case we parse float to integer
-    var iterations = parseInt(document.getElementById("iterationsInput").getAttribute("value"));
+    var iterations = parseInt(document.getElementById("iterationsInput").value);
+    console.log(iterations);
     splitLine(start, end, 0, iterations);
 };
 //Register client first click and start drawing line from there

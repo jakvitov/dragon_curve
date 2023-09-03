@@ -54,7 +54,9 @@ const splitLine = (a : Coord, b : Coord, iterNum : number, iterMax : number) : v
 const start = (start : Coord, end : Coord) : void => {
 
     //We can parse this, since the input is of type number. Worst case we parse float to integer
-    const iterations : number = parseInt(document.getElementById("iterationsInput").getAttribute("value"));
+    const iterations : number = parseInt((document.getElementById("iterationsInput") as HTMLInputElement).value);
+    console.log(iterations)
+
 
     splitLine(start, end, 0, iterations);
 }
