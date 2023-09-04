@@ -1,12 +1,69 @@
 let drawing : boolean = false;
+let started : boolean = false;
+
 let drawingStart : Coord = {x : null, y : null};
 let canvas : any = document.getElementById("drawBoard");
 const context : any= canvas.getContext("2d");
+
+class Line {
+
+    start : Coord;
+    end : Coord;
+
+    constructor(start : Coord, end : Coord){
+        this.start = start;
+        this.end = end;
+    }
+
+    serializeCoord(coord : Coord){
+        return coord.x + "_" + coord.y;
+    }
+
+    deserializeCoord(strCoord : string){
+        const parsed : string[] = strCoord.split("_");
+        return {x : parseInt(parsed[0]), y : parseInt(parsed[1])};
+    }
+
+    serializeStart() : string {
+        return this.serializeCoord(this.start);
+    }
+
+    serializeEnd() : string {
+        return this.serializeCoord(this.end);
+    }
+
+    deserializeStart(start : string) : Coord {
+        return this.deserializeCoord(start);
+    }
+
+    deserializeEnd(end : string) : Coord {
+        return this.deserializeCoord(end);
+    }
+
+}
+
+class DrawConext {
+    
+    canvas : any;
+    context : any;
+    
+    //For (O1) fast searches in set => we use search by value based on string value of lines
+    //If there was fast search by value in sets in TS we would have Set<Line> or 
+    lines : Set<string>;
+
+    constructor(boardId : string){
+
+    }
+
+}
+
+
 
 interface Coord {
     x : number;
     y : number;
 }
+
 const drawLine = (from : Coord, to : Coord) : void => {
     context.beginPath();
     context.moveTo(from.x, from.y);
@@ -23,6 +80,7 @@ const clearCanvas = (context : any) => {
 const splitLine = (a : Coord, b : Coord, iterNum : number, iterMax : number) : void => {
 
     if (iterNum >= iterMax){
+        started = false;
         return;
     }
 
@@ -53,6 +111,9 @@ const splitLine = (a : Coord, b : Coord, iterNum : number, iterMax : number) : v
 
 const start = (start : Coord, end : Coord) : void => {
 
+    //Noone can draw, while we render
+    started = true;
+
     //We can parse this, since the input is of type number. Worst case we parse float to integer
     const iterations : number = parseInt((document.getElementById("iterationsInput") as HTMLInputElement).value);
     console.log(iterations)
@@ -65,6 +126,11 @@ const start = (start : Coord, end : Coord) : void => {
 
 //Register client first click and start drawing line from there
 canvas.addEventListener("click", (ev) => {
+
+    //We are already drawing, we do not want anyone to draw now
+    if (started){
+        return;
+    }
 
     if (drawing) {
         let x : number = ev.clientX - canvas.getBoundingClientRect().left;
