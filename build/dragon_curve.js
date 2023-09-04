@@ -1,7 +1,7 @@
 let drawing = false;
 let started = false;
 //We get the current state of draw past generation checkbox on page load
-let drawPastGen = document.getElementById("pastGenCheckbox").value === "on";
+let drawPastGen = document.getElementById("pastGenCheckbox").checked;
 let drawingStart = { x: null, y: null };
 class Line {
     constructor(start, end, strLine) {
@@ -159,5 +159,5 @@ drawContext.getCanvas().addEventListener("mousemove", (ev) => {
 });
 //Draw past gen checkbox is checked/unchecked
 document.getElementById("pastGenCheckbox").addEventListener("click", () => {
-    drawPastGen = !drawPastGen;
+    drawPastGen = document.getElementById("pastGenCheckbox").checked;
 });
