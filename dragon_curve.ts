@@ -31,7 +31,7 @@ class Line {
     }
 
     serializeCoord(coord : Coord) : string{
-        return coord.x + "_" + coord.y;
+        return Math.trunc(coord.x) + "_" + Math.trunc(coord.y);
     }
 
     deserializeCoord(strCoord : string) : Coord{
@@ -64,7 +64,6 @@ class DrawConext {
     lines : Set<string>;
 
     constructor(boardId : string){
-        console.log("Setting  up lines")
         this.canvas = document.getElementById("drawBoard");
         this.context = this.canvas.getContext("2d");
         this.lines = new Set<string>;
@@ -100,13 +99,15 @@ class DrawConext {
     //We cannot delte line on html canvas right away
     //We need to redraw the picture without it
     removeLine(start : Coord, end : Coord){
-        const line : Line = new Line(start, end, null);
-        const serializedLine : string = line.serializeLine();
+        const inputLine : Line = new Line(start, end, null);
+        const serializedLine : string = inputLine.serializeLine();
         if (this.lines.has(serializedLine)){
             this.lines.delete(serializedLine);
+            console.log("Deleted: " + serializedLine);
             this.clear();
             this.lines.forEach((line) => {
                 const deseralizedLine : Line = new Line (null, null, line);
+                console.log("Drawing : " + line);
                 this.drawLine(deseralizedLine.getStart(), deseralizedLine.getEnd());
             })
         }
@@ -147,8 +148,6 @@ const splitLine = (a : Coord, b : Coord, iterNum : number, iterMax : number) : v
 
     //Transform the relativeC to normal coordinates
     const c : Coord = {x : relativeC.x + middle.x, y : relativeC.y + middle.y};
-
-    console.log(c);
 
     setTimeout(() => {
         drawContext.removeLine(a, b);
