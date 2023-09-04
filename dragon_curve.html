@@ -9,17 +9,16 @@
 <body>
     <h1>Dragon curve generator</h1>
 
-    <p >Start: [<span id="startCoord"></span>]</p>
-    <p >End: [<span id="endCoord"></span>]</p>
 
-    <input type="checkbox" id="pastGenCheckbox" name="pastGenCheckbox" checked />
-    <label for="pastGenCheckbox">Show past generations</label>
+    <div class="options">
+       
+        <label for="pastGenCheckbox">Show past generations: </label>
+        <input type="checkbox" id="pastGenCheckbox" name="pastGenCheckbox" checked />
 
+        <label for="iterationsInput">Enter number of iterations:</label>
+        <input type="number" min="1" step="1" value="7" id="iterationsInput">
+    </div>
 
-
-    <label for="iterationsInput">Enter number of iterations:</label>
-    <input type="number" min="1" step="1" value="7" id="iterationsInput">
-    
     <canvas width="700" height="700" id="drawBoard" />
     <script src="build/dragon_curve.js"></script>
 </body>

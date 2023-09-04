@@ -70,11 +70,11 @@ class DrawConext {
         const serializedLine = inputLine.serializeLine();
         if (this.lines.has(serializedLine)) {
             this.lines.delete(serializedLine);
-            console.log("Deleted: " + serializedLine);
+            //console.log("Deleted: " + serializedLine);
             this.clear();
             this.lines.forEach((line) => {
                 const deseralizedLine = new Line(null, null, line);
-                console.log("Drawing : " + line);
+                //console.log("Drawing : " + line);
                 this.drawLine(deseralizedLine.getStart(), deseralizedLine.getEnd());
             });
         }
@@ -121,7 +121,6 @@ const start = (start, end) => {
     drawContext.clearMemory();
     //We can parse this, since the input is of type number. Worst case we parse float to integer
     const iterations = parseInt(document.getElementById("iterationsInput").value);
-    console.log(iterations);
     splitLine(start, end, 0, iterations);
 };
 let drawContext = new DrawConext("drawBoard");
@@ -143,7 +142,6 @@ drawContext.getCanvas().addEventListener("click", (ev) => {
     //Get coordinates of client click and set it as a drawing start
     drawingStart.x = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
     drawingStart.y = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
-    document.getElementById("startCoord").innerText = Math.floor(drawingStart.x) + ", " + Math.floor(drawingStart.y);
     drawing = true;
 });
 //When the user is drawing - track the position of the mouse and draw line to it
@@ -155,7 +153,6 @@ drawContext.getCanvas().addEventListener("mousemove", (ev) => {
     let y = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
     drawContext.clear();
     drawContext.drawNonPersistedLine(drawingStart, { x: x, y: y });
-    document.getElementById("endCoord").innerText = Math.floor(x) + ", " + Math.floor(y);
 });
 //Draw past gen checkbox is checked/unchecked
 document.getElementById("pastGenCheckbox").addEventListener("click", () => {

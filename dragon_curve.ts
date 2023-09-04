@@ -203,7 +203,6 @@ drawContext.getCanvas().addEventListener("click", (ev) => {
     //Get coordinates of client click and set it as a drawing start
     drawingStart.x = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
     drawingStart.y = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
-    document.getElementById("startCoord").innerText = Math.floor(drawingStart.x) + ", " + Math.floor(drawingStart.y);
     drawing = true;
 })
 
@@ -216,7 +215,6 @@ drawContext.getCanvas().addEventListener("mousemove", (ev) => {
     let y : number = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
     drawContext.clear();
     drawContext.drawNonPersistedLine(drawingStart, {x : x, y : y});
-    document.getElementById("endCoord").innerText = Math.floor(x) + ", " + Math.floor(y);
 })
 
 
