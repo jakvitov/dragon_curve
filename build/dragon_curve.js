@@ -1,5 +1,7 @@
 let drawing = false;
 let started = false;
+//We get the current state of draw past generation checkbox on page load
+let drawPastGen = document.getElementById("pastGenCheckbox").value === "on";
 let drawingStart = { x: null, y: null };
 class Line {
     constructor(start, end, strLine) {
@@ -103,7 +105,9 @@ const splitLine = (a, b, iterNum, iterMax) => {
     //Transform the relativeC to normal coordinates
     const c = { x: relativeC.x + middle.x, y: relativeC.y + middle.y };
     setTimeout(() => {
-        drawContext.removeLine(a, b);
+        if (!drawPastGen) {
+            drawContext.removeLine(a, b);
+        }
         drawContext.drawLine(c, a);
         drawContext.drawLine(c, b);
         splitLine(c, a, iterNum + 1, iterMax);
@@ -152,4 +156,8 @@ drawContext.getCanvas().addEventListener("mousemove", (ev) => {
     drawContext.clear();
     drawContext.drawNonPersistedLine(drawingStart, { x: x, y: y });
     document.getElementById("endCoord").innerText = Math.floor(x) + ", " + Math.floor(y);
+});
+//Draw past gen checkbox is checked/unchecked
+document.getElementById("pastGenCheckbox").addEventListener("click", () => {
+    drawPastGen = !drawPastGen;
 });
