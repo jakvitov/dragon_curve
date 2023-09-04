@@ -2,42 +2,54 @@ let drawing : boolean = false;
 let started : boolean = false;
 
 let drawingStart : Coord = {x : null, y : null};
-let canvas : any = document.getElementById("drawBoard");
-const context : any= canvas.getContext("2d");
+
+
+interface Coord {
+    x : number;
+    y : number;
+}
+
 
 class Line {
 
     start : Coord;
     end : Coord;
 
-    constructor(start : Coord, end : Coord){
+    constructor(start : Coord, end : Coord, strLine : string){
+        if (strLine !== null){
+            this.deserialize(strLine);
+            return;
+        }
         this.start = start;
         this.end = end;
     }
 
-    serializeCoord(coord : Coord){
+    deserialize(strLine : string){
+        const parsed : string[] = strLine.split("|");
+        this.start = this.deserializeCoord(parsed[0]);
+        this.end = this.deserializeCoord(parsed[1]);
+    }
+
+    serializeCoord(coord : Coord) : string{
         return coord.x + "_" + coord.y;
     }
 
-    deserializeCoord(strCoord : string){
+    deserializeCoord(strCoord : string) : Coord{
         const parsed : string[] = strCoord.split("_");
         return {x : parseInt(parsed[0]), y : parseInt(parsed[1])};
     }
 
-    serializeStart() : string {
-        return this.serializeCoord(this.start);
+    //Format x_y|a_b
+    serializeLine() : string{
+        return this.serializeCoord(this.start) + "|" + this.serializeCoord(this.end);
     }
 
-    serializeEnd() : string {
-        return this.serializeCoord(this.end);
+    getStart() : Coord {
+        return this.start; 
     }
 
-    deserializeStart(start : string) : Coord {
-        return this.deserializeCoord(start);
-    }
-
-    deserializeEnd(end : string) : Coord {
-        return this.deserializeCoord(end);
+    getEnd() : Coord {
+        return this.end;
     }
 
 }
@@ -52,29 +64,68 @@ class DrawConext {
     lines : Set<string>;
 
     constructor(boardId : string){
+        console.log("Setting  up lines")
+        this.canvas = document.getElementById("drawBoard");
+        this.context = this.canvas.getContext("2d");
+        this.lines = new Set<string>;
+    }
 
+    //Our default line is erasable, therefore we keep them stored in our set
+    drawLine(start : Coord, end : Coord){
+        const line : Line = new Line(start, end, null);
+        this.lines.add(line.serializeLine());
+
+        this.context.beginPath();
+        this.context.moveTo(line.start.x, line.start.y);
+        this.context.lineTo(line.end.x, line.end.y);
+        this.context.stroke();
+    }
+
+    //Draw a line, that is not persisted in any lines cache and cannot be erased
+    //Ideal for in-animation strings, that get erased by clear and never redrawn again
+    drawNonPersistedLine(start : Coord, end : Coord){
+        const line : Line = new Line(start, end, null);
+
+        this.context.beginPath();
+        this.context.moveTo(line.start.x, line.start.y);
+        this.context.lineTo(line.end.x, line.end.y);
+        this.context.stroke();
+    }
+
+    //Clear the canvas
+    clear(){
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    //We cannot delte line on html canvas right away
+    //We need to redraw the picture without it
+    removeLine(start : Coord, end : Coord){
+        const line : Line = new Line(start, end, null);
+        const serializedLine : string = line.serializeLine();
+        if (this.lines.has(serializedLine)){
+            this.lines.delete(serializedLine);
+            this.clear();
+            this.lines.forEach((line) => {
+                const deseralizedLine : Line = new Line (null, null, line);
+                this.drawLine(deseralizedLine.getStart(), deseralizedLine.getEnd());
+            })
+        }
+    }
+
+    getCanvas() : any {
+        return this.canvas;
+    }
+
+    getContext() : any {
+        return this.context()
+    }
+
+    clearMemory() : void {
+        this.lines = new Set<string>;
     }
 
 }
 
-
-
-interface Coord {
-    x : number;
-    y : number;
-}
-
-const drawLine = (from : Coord, to : Coord) : void => {
-    context.beginPath();
-    context.moveTo(from.x, from.y);
-    context.lineTo(to.x, to.y);
-    context.stroke();
-}
-
-//Clear the canvas
-const clearCanvas = (context : any) => {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-}
 
 //Given a line from a |---| b, split the line in half and create both hypotenuses of it by creating point C
 const splitLine = (a : Coord, b : Coord, iterNum : number, iterMax : number) : void => {
@@ -100,8 +151,9 @@ const splitLine = (a : Coord, b : Coord, iterNum : number, iterMax : number) : v
     console.log(c);
 
     setTimeout(() => {
-        drawLine(c, a);
-        drawLine(c, b);
+        drawContext.removeLine(a, b);
+        drawContext.drawLine(c, a);
+        drawContext.drawLine(c, b);
         
         splitLine(c, a, iterNum + 1, iterMax);
         splitLine(c, b, iterNum + 1, iterMax);
@@ -113,6 +165,8 @@ const start = (start : Coord, end : Coord) : void => {
 
     //Noone can draw, while we render
     started = true;
+    //We delete previous pricture from the cache
+    drawContext.clearMemory();
 
     //We can parse this, since the input is of type number. Worst case we parse float to integer
     const iterations : number = parseInt((document.getElementById("iterationsInput") as HTMLInputElement).value);
@@ -122,10 +176,11 @@ const start = (start : Coord, end : Coord) : void => {
     splitLine(start, end, 0, iterations);
 }
 
+let drawContext = new DrawConext("drawBoard");
 
 
 //Register client first click and start drawing line from there
-canvas.addEventListener("click", (ev) => {
+drawContext.getCanvas().addEventListener("click", (ev) => {
 
     //We are already drawing, we do not want anyone to draw now
     if (started){
@@ -133,30 +188,30 @@ canvas.addEventListener("click", (ev) => {
     }
 
     if (drawing) {
-        let x : number = ev.clientX - canvas.getBoundingClientRect().left;
-        let y : number = ev.clientY - canvas.getBoundingClientRect().top;
-        clearCanvas(context);
-        drawLine(drawingStart, {x : x, y : y});
+        let x : number = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
+        let y : number = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
+        drawContext.clear();
+        drawContext.drawLine(drawingStart, {x : x, y : y});
         start(drawingStart, {x : x, y : y})
         drawing = false;
         return;
     }
 
     //Get coordinates of client click and set it as a drawing start
-    drawingStart.x = ev.clientX - canvas.getBoundingClientRect().left;
-    drawingStart.y = ev.clientY - canvas.getBoundingClientRect().top;
+    drawingStart.x = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
+    drawingStart.y = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
     document.getElementById("startCoord").innerText = Math.floor(drawingStart.x) + ", " + Math.floor(drawingStart.y);
     drawing = true;
 })
 
 //When the user is drawing - track the position of the mouse and draw line to it
-canvas.addEventListener("mousemove", (ev) => {
+drawContext.getCanvas().addEventListener("mousemove", (ev) => {
     if (!drawing){
         return;
     }
-    let x : number = ev.clientX - canvas.getBoundingClientRect().left;
-    let y : number = ev.clientY - canvas.getBoundingClientRect().top;
-    clearCanvas(context);
-    drawLine(drawingStart, {x : x, y : y});
+    let x : number = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
+    let y : number = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
+    drawContext.clear();
+    drawContext.drawNonPersistedLine(drawingStart, {x : x, y : y});
     document.getElementById("endCoord").innerText = Math.floor(x) + ", " + Math.floor(y);
 })
