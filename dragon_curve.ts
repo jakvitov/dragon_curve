@@ -106,11 +106,11 @@ class DrawConext {
         const serializedLine : string = inputLine.serializeLine();
         if (this.lines.has(serializedLine)){
             this.lines.delete(serializedLine);
-            console.log("Deleted: " + serializedLine);
+            //console.log("Deleted: " + serializedLine);
             this.clear();
             this.lines.forEach((line) => {
                 const deseralizedLine : Line = new Line (null, null, line);
-                console.log("Drawing : " + line);
+                //console.log("Drawing : " + line);
                 this.drawLine(deseralizedLine.getStart(), deseralizedLine.getEnd());
             })
         }
@@ -174,7 +174,6 @@ const start = (start : Coord, end : Coord) : void => {
 
     //We can parse this, since the input is of type number. Worst case we parse float to integer
     const iterations : number = parseInt((document.getElementById("iterationsInput") as HTMLInputElement).value);
-    console.log(iterations)
 
 
     splitLine(start, end, 0, iterations);
