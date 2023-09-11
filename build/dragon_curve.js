@@ -1,5 +1,6 @@
 let drawing = false;
 let started = false;
+let nthIter = 0;
 //We get the current state of draw past generation checkbox on page load
 let drawPastGen = document.getElementById("pastGenCheckbox").checked;
 let drawingStart = { x: null, y: null };
@@ -39,12 +40,11 @@ class DrawConext {
     constructor(boardId) {
         this.canvas = document.getElementById("drawBoard");
         this.context = this.canvas.getContext("2d");
-        this.lines = new Set;
+        this.lines = new Set();
     }
     //Our default line is erasable, therefore we keep them stored in our set
     drawLine(start, end) {
         const line = new Line(start, end, null);
-        this.lines.add(line.serializeLine());
         this.context.beginPath();
         this.context.moveTo(line.start.x, line.start.y);
         this.context.lineTo(line.end.x, line.end.y);
@@ -52,32 +52,33 @@ class DrawConext {
     }
     //Draw a line, that is not persisted in any lines cache and cannot be erased
     //Ideal for in-animation strings, that get erased by clear and never redrawn again
-    drawNonPersistedLine(start, end) {
+    drawNonBufferedLine(start, end) {
         const line = new Line(start, end, null);
         this.context.beginPath();
         this.context.moveTo(line.start.x, line.start.y);
         this.context.lineTo(line.end.x, line.end.y);
         this.context.stroke();
     }
+    //We add a line in the context map, but we do not draw it
+    //This allows us to optimalise the code for rendering only after the whole image was drawn
+    bufferLine(start, end) {
+        const line = new Line(start, end, null);
+        this.lines.add(line.serializeLine());
+    }
+    //Draws all lines prepared in a buffer
+    drawBuffer() {
+        this.clear();
+        this.lines.forEach((line) => {
+            const deseralizedLine = new Line(null, null, line);
+            this.drawLine(deseralizedLine.getStart(), deseralizedLine.getEnd());
+        });
+    }
+    clearBuffer() {
+        this.lines = new Set();
+    }
     //Clear the canvas
     clear() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-    //We cannot delte line on html canvas right away
-    //We need to redraw the picture without it
-    removeLine(start, end) {
-        const inputLine = new Line(start, end, null);
-        const serializedLine = inputLine.serializeLine();
-        if (this.lines.has(serializedLine)) {
-            this.lines.delete(serializedLine);
-            //console.log("Deleted: " + serializedLine);
-            this.clear();
-            this.lines.forEach((line) => {
-                const deseralizedLine = new Line(null, null, line);
-                //console.log("Drawing : " + line);
-                this.drawLine(deseralizedLine.getStart(), deseralizedLine.getEnd());
-            });
-        }
     }
     getCanvas() {
         return this.canvas;
@@ -85,13 +86,12 @@ class DrawConext {
     getContext() {
         return this.context();
     }
-    clearMemory() {
-        this.lines = new Set;
-    }
 }
 //Given a line from a |---| b, split the line in half and create both hypotenuses of it by creating point C
-const splitLine = (a, b, iterNum, iterMax) => {
-    if (iterNum >= iterMax) {
+const splitLine = (a, b, generation, iterMax) => {
+    nthIter++;
+    if (generation >= iterMax) {
+        console.log("Reached max number of iterations: " + iterMax);
         started = false;
         return;
     }
@@ -105,23 +105,32 @@ const splitLine = (a, b, iterNum, iterMax) => {
     //Transform the relativeC to normal coordinates
     const c = { x: relativeC.x + middle.x, y: relativeC.y + middle.y };
     setTimeout(() => {
-        if (!drawPastGen) {
-            drawContext.removeLine(a, b);
+        //We buffer both of the next gen lines to be drawn after the last lines are computed
+        drawContext.bufferLine(c, a);
+        drawContext.bufferLine(c, b);
+        console.log("NthIter: " + nthIter);
+        console.log("Gen: " + generation);
+        //Check if this line is the last of the iteration -> then we draw the buffer 
+        if (nthIter === (Math.pow(2, generation) - 1)) {
+            console.log("Reached maximum for gen. " + generation + ", with " + nthIter + " iterations");
+            drawContext.drawBuffer();
+            //If the past gen erase option is not chosen -> we clear the buffer with this gen.
+            if (!drawPastGen) {
+                drawContext.clearBuffer();
+            }
         }
-        drawContext.drawLine(c, a);
-        drawContext.drawLine(c, b);
-        splitLine(c, a, iterNum + 1, iterMax);
-        splitLine(c, b, iterNum + 1, iterMax);
+        splitLine(c, a, generation + 1, iterMax);
+        splitLine(c, b, generation + 1, iterMax);
     }, 1000);
 };
 const start = (start, end) => {
+    drawContext.clearBuffer();
     //Noone can draw, while we render
     started = true;
-    //We delete previous pricture from the cache
-    drawContext.clearMemory();
     //We can parse this, since the input is of type number. Worst case we parse float to integer
     const iterations = parseInt(document.getElementById("iterationsInput").value);
-    splitLine(start, end, 0, iterations);
+    nthIter = 0;
+    splitLine(start, end, 1, iterations);
 };
 let drawContext = new DrawConext("drawBoard");
 //Register client first click and start drawing line from there
@@ -134,7 +143,7 @@ drawContext.getCanvas().addEventListener("click", (ev) => {
         let x = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
         let y = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
         drawContext.clear();
-        drawContext.drawLine(drawingStart, { x: x, y: y });
+        drawContext.bufferLine(drawingStart, { x: x, y: y });
         start(drawingStart, { x: x, y: y });
         drawing = false;
         return;
@@ -152,7 +161,7 @@ drawContext.getCanvas().addEventListener("mousemove", (ev) => {
     let x = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
     let y = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
     drawContext.clear();
-    drawContext.drawNonPersistedLine(drawingStart, { x: x, y: y });
+    drawContext.drawNonBufferedLine(drawingStart, { x: x, y: y });
 });
 //Draw past gen checkbox is checked/unchecked
 document.getElementById("pastGenCheckbox").addEventListener("click", () => {
