@@ -102,6 +102,7 @@ class DrawConext {
 
     //Draws all lines prepared in a buffer
     drawBuffer(){
+        console.log("Drawing with " + nthIter + " lines");
         this.clear();
             this.lines.forEach((line) => {
                 const deseralizedLine : Line = new Line (null, null, line);
@@ -110,7 +111,7 @@ class DrawConext {
     }
 
     clearBuffer(){
-        this.lines = new Set<string>();
+        this.lines.clear();
     }
 
     //Clear the canvas
@@ -132,11 +133,12 @@ class DrawConext {
 const splitLine = (a : Coord, b : Coord, generation : number, iterMax : number) : void => {
     nthIter ++;
 
-    if (generation >= iterMax){
-        console.log("Reached max number of iterations: " + iterMax)
+    if (generation > iterMax){
         started = false;
         return;
     }
+
+    console.log(nthIter)
 
     //Middle of the line
     const middle : Coord = {x : (a.x + b.x)/2, y : (a.y + b.y)/2};
@@ -152,23 +154,19 @@ const splitLine = (a : Coord, b : Coord, generation : number, iterMax : number) 
     const c : Coord = {x : relativeC.x + middle.x, y : relativeC.y + middle.y};
 
     setTimeout(() => {
-        
-        //We buffer both of the next gen lines to be drawn after the last lines are computed
-        drawContext.bufferLine(c, a);
-        drawContext.bufferLine(c, b);
-
-        console.log("NthIter: " + nthIter);
-        console.log("Gen: " + generation);
 
         //Check if this line is the last of the iteration -> then we draw the buffer 
         if (nthIter === (Math.pow(2, generation) - 1)){
-            console.log("Reached maximum for gen. " + generation + ", with " + nthIter + " iterations");
             drawContext.drawBuffer();
             //If the past gen erase option is not chosen -> we clear the buffer with this gen.
             if (!drawPastGen){
                 drawContext.clearBuffer();
             }
         }
+
+        //We buffer both of the next gen lines to be drawn after the last lines are computed
+        drawContext.bufferLine(c, a);
+        drawContext.bufferLine(c, b);
 
         splitLine(c, a, generation + 1, iterMax);
         splitLine(c, b, generation + 1, iterMax);
@@ -178,16 +176,14 @@ const splitLine = (a : Coord, b : Coord, generation : number, iterMax : number) 
 
 const start = (start : Coord, end : Coord) : void => {
 
-    drawContext.clearBuffer();
-
     //Noone can draw, while we render
     started = true;
 
     //We can parse this, since the input is of type number. Worst case we parse float to integer
-    const iterations : number = parseInt((document.getElementById("iterationsInput") as HTMLInputElement).value);
+    const maxGeneration : number = parseInt((document.getElementById("iterationsInput") as HTMLInputElement).value);
     nthIter = 0;
 
-    splitLine(start, end, 1, iterations);
+    splitLine(start, end, 1, maxGeneration);
 }
 
 let drawContext = new DrawConext("drawBoard");
@@ -205,6 +201,7 @@ drawContext.getCanvas().addEventListener("click", (ev) => {
         let x : number = ev.clientX - drawContext.getCanvas().getBoundingClientRect().left;
         let y : number = ev.clientY - drawContext.getCanvas().getBoundingClientRect().top;
         drawContext.clear();
+        drawContext.clearBuffer();
         drawContext.bufferLine(drawingStart, {x : x, y : y});
         start(drawingStart, {x : x, y : y})
         drawing = false;
